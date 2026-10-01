@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>English Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#2b2145; --paper:#faf6ee; --paper2:#f1e9d8;
+  --gold:#e0a72e; --gold-dark:#b9821a;
+  --violet:#5b3e9e; --violet-dark:#3c2969;
+  --leaf:#4f9d5e; --rose:#d9556b;
+  --sky:#7ec8e3;
+  --shadow: 0 6px 0 rgba(43,33,69,.25);
+  box-sizing:border-box;
+  padding-top: env(safe-area-inset-top,0px);
+  padding-bottom: env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;}
+html{scroll-padding-top:env(safe-area-inset-top,0px);}
+body{
+  margin:0; min-height:100%; font-family:'Gowun Dodum',sans-serif;
+  background: radial-gradient(circle at 20% 0%, #6a4bb0 0%, #3c2969 45%, #241a42 100%);
+  color:var(--ink);
+}
+.title-font{font-family:'Jua',sans-serif;}
+#app{max-width:520px;margin:0 auto;min-height:100vh;position:relative;display:flex;flex-direction:column;}
+
+/* ---- top bar ---- */
+#topbar{
+  padding:14px 16px 10px; color:#fff;
+}
+#topbar .row1{display:flex;justify-content:space-between;align-items:baseline;}
+#topbar .brand{font-family:'Jua',sans-serif;font-size:20px;letter-spacing:1px;}
+#topbar .stage{font-size:13px;opacity:.85;margin-top:2px;}
+#statgrid{
+  margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;
+}
+.stat-pill{
+  background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.25);
+  border-radius:999px; padding:5px 12px; font-size:13px; display:flex; align-items:center; gap:5px;
+}
+#xpbar-wrap{margin-top:8px;background:rgba(255,255,255,.15);border-radius:999px;height:10px;overflow:hidden;}
+#xpbar{height:100%;background:linear-gradient(90deg,var(--gold),#ffd76a);width:0%;transition:width .4s;}
+#limitbar-wrap{margin-top:6px;background:rgba(255,255,255,.15);border-radius:999px;height:6px;overflow:hidden;}
+#limitbar{height:100%;background:var(--sky);width:0%;transition:width .4s;}
+#limittext{font-size:11px;opacity:.8;margin-top:3px;}
+
+/* ---- main card ---- */
+#main{
+  flex:1; background:var(--paper); border-radius:26px 26px 0 0; padding:22px 18px 100px;
+  box-shadow: 0 -8px 24px rgba(0,0,0,.25);
+}
+h2.section-title{font-family:'Jua',sans-serif;color:var(--violet-dark);margin:0 0 14px;font-size:20px;}
+
+/* ---- start screen ---- */
+.center-card{text-align:center;padding:20px 10px;}
+.big-emoji{font-size:64px;line-height:1;}
+input[type=text]{
+  width:100%; padding:12px 14px; border-radius:14px; border:2px solid var(--paper2);
+  font-family:'Gowun Dodum',sans-serif; font-size:16px; margin-top:10px; background:#fff;
+}
+.emoji-grid{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:14px 0;}
+.emoji-choice{
+  font-size:30px; padding:10px 12px; border-radius:16px; background:var(--paper2); border:2px solid transparent; cursor:pointer;
+}
+.emoji-choice.selected{border-color:var(--gold-dark); background:#fff0cf;}
+
+/* ---- buttons ---- */
+.btn{
+  font-family:'Gowun Dodum',sans-serif; font-size:15px; border:none; border-radius:16px;
+  padding:14px 18px; cursor:pointer; width:100%; text-align:left; margin-bottom:10px;
+  background:#fff; box-shadow: var(--shadow); border:2px solid var(--paper2);
+  transition: transform .08s;
+}
+.btn:active{transform:translateY(3px); box-shadow:0 3px 0 rgba(43,33,69,.25);}
+.btn.correct{background:#e3f6e6;border-color:var(--leaf);}
+.btn.wrong{background:#fbe5e8;border-color:var(--rose);}
+.btn.disabled{opacity:.55;pointer-events:none;}
+.btn-primary{
+  background:var(--gold); color:#3c2600; font-family:'Jua',sans-serif; box-shadow:0 6px 0 var(--gold-dark);
+  text-align:center;
+}
+.btn-primary:active{box-shadow:0 3px 0 var(--gold-dark);}
+.btn-ghost{background:transparent;box-shadow:none;border:2px solid var(--paper2);text-align:center;}
+
+/* ---- question ---- */
+#qmeta{font-size:13px;color:#7a6d99;margin-bottom:6px;}
+#qtext{font-size:19px;font-weight:700;line-height:1.5;margin-bottom:18px;color:var(--ink);}
+#feedback{
+  border-radius:16px;padding:14px;margin:14px 0;font-size:14px;line-height:1.6;display:none;
+}
+#feedback.ok{background:#e3f6e6;color:#215b2c;display:block;}
+#feedback.bad{background:#fbe5e8;color:#7c1f2d;display:block;}
+
+/* ---- boss ---- */
+.boss-hp-wrap{background:var(--paper2);border-radius:999px;height:18px;overflow:hidden;margin:10px 0 4px;}
+.boss-hp{height:100%;background:linear-gradient(90deg,var(--rose),#ff8fa3);width:100%;transition:width .5s;}
+.boss-emoji{font-size:56px;text-align:center;}
+
+/* ---- notebook / achievements / status lists ---- */
+.note-card{background:#fff;border:2px solid var(--paper2);border-radius:16px;padding:14px;margin-bottom:12px;}
+.note-card h4{margin:0 0 6px;color:var(--violet-dark);font-family:'Jua',sans-serif;font-size:16px;}
+.note-card p{margin:4px 0;font-size:14px;line-height:1.55;}
+.badge-row{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0;}
+.badge{background:var(--paper2);border-radius:14px;padding:10px;text-align:center;width:31%;font-size:12px;}
+.badge.locked{opacity:.35;}
+.badge .ic{font-size:24px;}
+.stat-line{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--paper2);font-size:14px;}
+
+/* ---- bottom action bar ---- */
+#actionbar{
+  position:fixed; left:0; right:0; bottom:0; max-width:520px; margin:0 auto;
+  background:var(--paper); border-top:2px solid var(--paper2);
+  padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px));
+  display:flex; gap:10px; align-items:center;
+}
+#actionbar button{flex:1;margin:0;}
+.icon-btn{background:#fff;border:2px solid var(--paper2);border-radius:14px;padding:12px 8px;font-size:13px;text-align:center;}
+.icon-btn.next{background:var(--gold);border-color:var(--gold-dark);font-family:'Jua',sans-serif;color:#3c2600;}
+.icon-btn[disabled]{opacity:.4;pointer-events:none;}
+
+.limit-alert{
+  background:#fff3e0;border:2px solid var(--gold-dark);border-radius:14px;padding:12px;margin-bottom:14px;font-size:13px;color:#7a4c00;
+}
+.hidden{display:none !important;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="topbar">
+    <div class="row1">
+      <div class="brand">🦋 English Quest</div>
+      <div id="hearts"></div>
+    </div>
+    <div class="stage" id="stageLabel">모험을 시작해 볼까?</div>
+    <div id="statgrid"></div>
+    <div id="xpbar-wrap"><div id="xpbar"></div></div>
+    <div id="limitbar-wrap"><div id="limitbar"></div></div>
+    <div id="limittext"></div>
+  </div>
+  <div id="main"></div>
+  <div id="actionbar" class="hidden"></div>
+</div>
+
+<script>
+/* ========================= 데이터 ========================= */
+const STAGES = [
+ {name:"Stage 1 · be동사 기초", qs:[
+   {q:"I ___ a student.", opts:["am","is","are","be"], a:0, exp:"주어가 I일 때는 am을 써요."},
+   {q:"She ___ happy.", opts:["am","is","are","be"], a:1, exp:"주어가 한 명(She)일 때는 is를 써요."},
+   {q:"They ___ friends.", opts:["am","is","are","be"], a:2, exp:"주어가 여러 명(They)일 때는 are를 써요."},
+   {q:"We ___ at school.", opts:["is","am","are","be"], a:2, exp:"We는 여러 명이니까 are를 써요."},
+   {q:"He ___ my brother.", opts:["are","am","is","be"], a:2, exp:"He는 한 명이니까 is를 써요."},
+   {q:"It ___ a cat.", opts:["am","are","is","be"], a:2, exp:"It은 한 개니까 is를 써요."}
+ ]},
+ {name:"Stage 2 · be동사 심화", qs:[
+   {q:"I ___ not tired.", opts:["am","is","are","do"], a:0, exp:"am 뒤에 not을 붙이면 부정문이 돼요."},
+   {q:"___ you ready?", opts:["Am","Is","Are","Do"], a:2, exp:"주어가 you일 때 의문문은 Are로 시작해요."},
+   {q:"She ___ not at home.", opts:["am","is","are","does"], a:1, exp:"She는 is의 부정문이니 is not이에요."},
+   {q:"___ they students?", opts:["Am","Is","Are","Do"], a:2, exp:"they는 복수라서 Are로 물어봐요."},
+   {q:"It ___ not raining.", opts:["am","is","are","do"], a:1, exp:"It은 is의 부정문을 써요."},
+   {q:"___ he a doctor?", opts:["Am","Is","Are","Does"], a:1, exp:"he는 단수라서 Is로 물어봐요."}
+ ]},
+ {name:"Stage 3 · 일반동사 기초", qs:[
+   {q:"I ___ soccer every day.", opts:["play","plays","playing","am play"], a:0, exp:"주어가 I일 때는 동사원형(play)을 써요."},
+   {q:"He ___ soccer every day.", opts:["play","plays","playing","is play"], a:1, exp:"주어가 He(3인칭 단수)일 땐 동사에 s를 붙여요."},
+   {q:"They ___ to school.", opts:["walks","walk","walking","is walk"], a:1, exp:"they는 복수라서 s를 붙이지 않아요."},
+   {q:"She ___ books.", opts:["read","reads","reading","is read"], a:1, exp:"She는 3인칭 단수라서 reads예요."},
+   {q:"We ___ pizza.", opts:["like","likes","liking","is like"], a:0, exp:"we는 복수니까 동사원형을 써요."},
+   {q:"My dog ___ fast.", opts:["run","runs","running","is run"], a:1, exp:"My dog은 한 마리(3인칭 단수)라서 runs예요."}
+ ]},
+ {name:"Stage 4 · 일반동사 부정문·의문문", qs:[
+   {q:"I ___ not like milk.", opts:["do","does","am","is"], a:0, exp:"I는 do not(don't)으로 부정문을 만들어요."},
+   {q:"He ___ not like milk.", opts:["do","does","am","is"], a:1, exp:"He는 does not(doesn't)을 써요."},
+   {q:"___ you like pizza?", opts:["Do","Does","Am","Is"], a:0, exp:"you는 Do로 물어봐요."},
+   {q:"___ she play tennis?", opts:["Do","Does","Am","Is"], a:1, exp:"she는 3인칭 단수라서 Does로 물어봐요."},
+   {q:"They ___ not go home.", opts:["do","does","is","am"], a:0, exp:"they는 복수라서 do not이에요."},
+   {q:"___ he live here?", opts:["Do","Does","Is","Am"], a:1, exp:"he는 3인칭 단수라서 Does로 물어봐요."}
+ ]},
+ {name:"Stage 5 · 종합 복습", qs:[
+   {q:"My sister ___ a teacher.", opts:["am","is","are","do"], a:1, exp:"My sister는 한 명이라서 is예요."},
+   {q:"___ they like dogs?", opts:["Do","Does","Is","Am"], a:0, exp:"they는 복수라서 Do로 물어봐요."},
+   {q:"He ___ not a doctor.", opts:["is","are","do","am"], a:0, exp:"He는 is not이에요."},
+   {q:"We ___ soccer on Sunday.", opts:["plays","play","is play","am play"], a:1, exp:"we는 복수니까 동사원형이에요."},
+   {q:"She ___ not eat meat.", opts:["do","does","is","am"], a:1, exp:"She는 does not이에요."},
+   {q:"___ you a student?", opts:["Am","Is","Are","Do"], a:2, exp:"you는 Are로 물어봐요."}
+ ]}
+];
+const BOSSES = { 5: {name:"🐉 영어 드래곤", n:10} };
+
+/* 5스테이지 이후 무한 문제용 재료 */
+const POOL_SUBJ=[["I","am","do"],["You","are","do"],["He","is","does"],["She","is","does"],["We","are","do"],["They","are","do"],["It","is","does"]];
+const POOL_VERB=[["play","plays"],["like","likes"],["read","reads"],["watch","watches"],["run","runs"],["study","studies"]];
+const POOL_OBJ=["soccer","music","books","movies","English","math"];
+
+const GRADES = ["초4","초5","초6","중1","중2","중3","고1","고2","고3","성인/기타"];
+/* 학년별 기본 예상 시작 스테이지 (테스트 점수로 최종 보정됨) */
+const GRADE_BASE_STAGE = {"초4":1,"초5":1,"초6":1,"중1":1,"중2":2,"중3":2,"고1":3,"고2":3,"고3":4,"성인/기타":2};
+
+function buildLevelTest(){
+  // 스테이지 1~5에서 난이도 순서대로 2문제씩 뽑아 10문제 구성
+  const qs=[];
+  STAGES.forEach(s=>{ qs.push(s.qs[0]); qs.push(s.qs[3]); });
+  return qs;
+}
+function decideStartFromTest(correct, grade){
+  // 정답 개수(0~10)를 기준으로 시작 스테이지/레벨 산출, 학년 기본값을 살짝 반영
+  let stage, level;
+  if(correct<=2){ stage=1; level=1; }
+  else if(correct<=4){ stage=2; level=3; }
+  else if(correct<=6){ stage=3; level=5; }
+  else if(correct<=8){ stage=4; level=8; }
+  else { stage=5; level=12; }
+  const gradeBase = GRADE_BASE_STAGE[grade] || 1;
+  stage = Math.max(stage, Math.min(gradeBase, stage+1)); // 학년이 높은데 점수가 낮으면 한 단계까지만 보정
+  return {stage, level};
+}
+
+const ACHIEVEMENTS = [
+ {id:"first_correct", name:"첫 번째 문제 정답", ic:"🏆", check:s=>s.totalCorrect>=1},
+ {id:"xp100", name:"100 XP 달성", ic:"🏆", check:s=>s.totalXPEarned>=100},
+ {id:"first_boss", name:"첫 번째 보스 클리어", ic:"🏆", check:s=>s.bossClears.length>=1},
+ {id:"streak10", name:"10문제 연속 정답", ic:"🏆", check:s=>s.bestStreak>=10},
+ {id:"lv10", name:"Lv.10 달성", ic:"🏆", check:s=>s.level>=10},
+ {id:"first_evo", name:"첫 번째 캐릭터 진화", ic:"🏆", check:s=>s.evolutionStage>=1},
+ {id:"review_done", name:"오답 복습 완료", ic:"🏆", check:s=>s.reviewCleared===true}
+];
+
+/* ========================= 상태 ========================= */
+const SAVE_KEY = "englishQuest_save_v1";
+let state = loadState();
+
+function defaultState(){
+  return {
+    charEmoji:"", charName:"",
+    level:1, xp:0, stage:1,
+    heart:5,
+    wrongBook:{}, // concept -> {count, examples:[{q,a,exp}]}
+    achievements:[],
+    bossClears:[],
+    evolutionStage:0,
+    totalAnswered:0, totalCorrect:0, totalWrong:0, totalXPEarned:0,
+    streak:0, bestStreak:0,
+    limitDate:"", limitUsed:0, limitTotal:40,
+    inBoss:false, bossHP:100, bossIdx:0, bossCorrect:0, bossTotal:0, bossName:"",
+    bossFailed:false,
+    curQIdx:0, curStageQs:[], answered:false, lastPick:-1,
+    fallbackLevel:0,
+    reviewQueue:[], reviewCleared:false,
+    recentResults:[], stageAskedIdx:[], stageTarget:6, mode:'stage',
+    playerAge:"", playerGrade:"",
+    testIdx:0, testCorrect:0, testQs:[], testDone:false,
+    startStage:1, startLevel:1,
+    onboardingDone:false,
+    screen:"playerInfo"
+  };
+}
+function loadState(){
+  try{
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(!raw) return defaultState();
+    const s = Object.assign(defaultState(), JSON.parse(raw));
+    if(s.charEmoji && !("onboardingDone" in JSON.parse(raw))){ s.onboardingDone = true; }
+    checkLimitReset(s);
+    return s;
+  }catch(e){ return defaultState(); }
+}
+function save(){
+  try{ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }catch(e){}
+}
+function checkLimitReset(s){
+  const today = new Date().toISOString().slice(0,10);
+  if(s.limitDate !== today){ s.limitDate = today; s.limitUsed = 0; }
+}
+
+/* ========================= 유틸 ========================= */
+function xpNeeded(){ return 100; }
+function heartsHTML(){
+  let h="";
+  for(let i=0;i<5;i++) h += i < state.heart ? "❤️" : "🖤";
+  return h;
+}
+function evoLabel(){
+  const stars = "⭐".repeat(state.evolutionStage);
+  return state.evolutionStage>0 ? " "+stars : "";
+}
+function pct(){ return Math.min(100, Math.round(state.limitUsed/state.limitTotal*100)); }
+function remainingQs(){ return Math.max(0, state.limitTotal - state.limitUsed); }
+
+function renderTop(){
+  document.getElementById("hearts").innerHTML = `<span style="font-size:15px">${heartsHTML()}</span>`;
+  document.getElementById("stageLabel").textContent =
+    state.inBoss ? `보스전 · ${state.bossName} · ${state.bossIdx+1} / ${state.bossTotal}`
+    : (state.screen==="game" ? `${state.mode==='review'?"📓 오답 복습":(STAGES[Math.min(state.stage-1,STAGES.length-1)]?.name || "추가 모험")} · ${state.curQIdx+1} / ${(state.stageTarget||state.curStageQs.length||1)}` : "모험을 시작해 볼까?");
+  document.getElementById("statgrid").innerHTML = `
+    <div class="stat-pill">${state.charEmoji||"🦋"} Lv.${state.level}${evoLabel()}</div>
+    <div class="stat-pill">⭐ ${state.xp}/${xpNeeded()}</div>
+    <div class="stat-pill">🎮 ${pct()}%</div>`;
+  document.getElementById("xpbar").style.width = (state.xp/xpNeeded()*100)+"%";
+  document.getElementById("limitbar").style.width = pct()+"%";
+  document.getElementById("limittext").textContent =
+    `🎮 오늘의 게임 한도 ${pct()}% 사용 · 남은 한도 ${100-pct()}% · 약 ${remainingQs()}문제 더 풀 수 있어요`;
+}
+
+function checkAchievements(){
+  let newly=[];
+  ACHIEVEMENTS.forEach(a=>{
+    if(!state.achievements.includes(a.id) && a.check(state)){
+      state.achievements.push(a.id); newly.push(a);
+    }
+  });
+  return newly;
+}
+
+function addXP(amount){
+  state.xp += amount; state.totalXPEarned += amount;
+  let leveledUp=false, newEvo=false;
+  while(state.xp >= xpNeeded()){
+    state.xp -= xpNeeded(); state.level += 1; leveledUp=true;
+    if(state.level % 10 === 0){
+      state.evolutionStage = Math.floor(state.level/10); newEvo=true;
+    }
+  }
+  return {leveledUp, newEvo};
+}
+
+function recordWrong(topic, q, correctText, exp){
+  if(!state.wrongBook[topic]) state.wrongBook[topic] = {count:0, examples:[]};
+  state.wrongBook[topic].count += 1;
+  if(state.wrongBook[topic].examples.length < 3){
+    state.wrongBook[topic].examples.push({q, a:correctText, exp});
+  }
+}
+function topicOf(stageIdx){
+  return STAGES[stageIdx] ? STAGES[stageIdx].name.split("·")[1].trim() : "종합 문법";
+}
+
+/* ========================= 문제 생성 (적응형 난이도) ========================= */
+const DIFF_ICON = {easy:"🌱 쉬움", normal:"⚔️ 보통", hard:"🔥 어려움"};
+
+function desiredDifficulty(){
+  const r = state.recentResults.slice(-3);
+  if(r.length>=2 && r.every(x=>x)) return 'hard';
+  if(r.length>=2 && r.filter(x=>!x).length>=2) return 'easy';
+  return 'normal';
+}
+function diffOfIdx(i){ return i<2 ? 'easy' : (i<4 ? 'normal' : 'hard'); }
+
+function pickFixedStageQuestion(stageIdx){
+  const pool = STAGES[stageIdx].qs;
+  const unasked = pool.map((q,i)=>i).filter(i=>!state.stageAskedIdx.includes(i));
+  if(unasked.length===0) return null;
+  const desired = desiredDifficulty();
+  let candidates = unasked.filter(i=>diffOfIdx(i)===desired);
+  if(candidates.length===0) candidates = unasked;
+  const pick = candidates[Math.floor(Math.random()*candidates.length)];
+  state.stageAskedIdx.push(pick);
+  return Object.assign({}, pool[pick], {tag:diffOfIdx(pick)});
+}
+
+function genFallbackQuestion(diff){
+  diff = diff || 'normal';
+  state.fallbackLevel++;
+  const subj = POOL_SUBJ[Math.floor(Math.random()*POOL_SUBJ.length)];
+  const verb = POOL_VERB[Math.floor(Math.random()*POOL_VERB.length)];
+  const obj = POOL_OBJ[Math.floor(Math.random()*POOL_OBJ.length)];
+  const isPlural = subj[0]==="I"||subj[0]==="You"||subj[0]==="We"||subj[0]==="They";
+  const correctVerb = isPlural ? verb[0] : verb[1];
+
+  if(diff==='easy'){
+    const opts4 = shuffle([verb[0], verb[1], verb[0]+"ing", subj[1]+" "+verb[0]]);
+    return { q:`${subj[0]} ___ ${obj}.`, opts:opts4, a:opts4.indexOf(correctVerb),
+      exp:`${subj[0]}${isPlural?"는 복수 주어라서 동사원형을":"는 3인칭 단수라서 동사에 s를"} 써요.`, tag:'easy' };
+  }
+  if(diff==='hard'){
+    // 부정문 또는 의문문 형태로 난이도를 높인다
+    if(Math.random()<0.5){
+      const neg = isPlural ? "don't" : "doesn't";
+      const opts4 = shuffle([neg, isPlural?"doesn't":"don't", "not", verb[1]+" not"]);
+      return { q:`${subj[0]} ___ ${verb[0]} ${obj}.`, opts:opts4, a:opts4.indexOf(neg),
+        exp:`${subj[0]}${isPlural?"는 don't":"는 doesn't"}로 부정문을 만들어요.`, tag:'hard' };
+    } else {
+      const aux = isPlural ? "Do" : "Does";
+      const opts4 = shuffle([aux, isPlural?"Does":"Do", "Is", "Am"]);
+      return { q:`___ ${subj[0]} ${verb[0]} ${obj}?`, opts:opts4, a:opts4.indexOf(aux),
+        exp:`${subj[0]}${isPlural?"는 Do":"는 Does"}로 의문문을 만들어요.`, tag:'hard' };
+    }
+  }
+  // normal
+  const opts = [verb[0], verb[1]];
+  if(Math.random()>0.5){opts.push(verb[0]+"ing");} else {opts.push(subj[1]+" "+verb[0]);}
+  opts.push("not "+verb[0]);
+  const shuffled = shuffle([...new Set(opts)].slice(0,4).concat(correctVerb).filter((v,i,a)=>a.indexOf(v)===i));
+  while(shuffled.length<4) shuffled.push(verb[0]+"s2");
+  const opts4 = shuffled.slice(0,4);
+  if(!opts4.includes(correctVerb)) opts4[0]=correctVerb;
+  return {
+    q:`${subj[0]} ___ ${obj}.`, opts:opts4, a:opts4.indexOf(correctVerb),
+    exp:`${subj[0]}${isPlural?"는 복수 주어라서 동사원형을":"는 3인칭 단수라서 동사에 s를"} 써요.`, tag:'normal'
+  };
+}
+function shuffle(arr){ return arr.map(v=>[Math.random(),v]).sort((a,b)=>a[0]-b[0]).map(v=>v[1]); }
+
+function appendNextStageQuestion(){
+  const idx = state.stage-1;
+  let q = STAGES[idx] ? pickFixedStageQuestion(idx) : null;
+  if(!q) q = genFallbackQuestion(desiredDifficulty());
+  state.curStageQs.push(q);
+}
+function loadStageQuestions(){
+  state.mode = 'stage';
+  state.curStageQs = []; state.curQIdx = 0; state.answered=false; state.lastPick=-1;
+  state.stageAskedIdx = [];
+  const idx = state.stage-1;
+  state.stageTarget = STAGES[idx] ? Math.min(6, STAGES[idx].qs.length) : 6;
+  appendNextStageQuestion();
+}
+
+/* ========================= 화면: 플레이어 정보 ========================= */
+function renderPlayerInfo(){
+  document.getElementById("actionbar").className="hidden";
+  const main = document.getElementById("main");
+  main.innerHTML = `
+    <div class="center-card">
+      <div class="big-emoji">📝</div>
+      <h2 class="section-title" style="margin-top:14px">너에 대해 알려줘!</h2>
+      <p style="font-size:13px;color:#7a6d99">나이와 학년을 알려주면 딱 맞는 난이도로 시작할 수 있어.</p>
+      <input type="text" id="ageInput" placeholder="나이 (숫자, 선택)" value="${state.playerAge}" style="text-align:center">
+      <select id="gradeInput" style="width:100%;padding:12px;margin-top:10px;border-radius:14px;border:2px solid var(--paper2);font-family:'Gowun Dodum',sans-serif;font-size:16px;background:#fff">
+        <option value="">학년을 선택해줘</option>
+        ${GRADES.map(g=>`<option value="${g}" ${state.playerGrade===g?"selected":""}>${g}</option>`).join("")}
+      </select>
+      <button class="btn btn-primary" style="margin-top:16px" id="toTestBtn">📊 실력 테스트 시작하기</button>
+      <button class="btn btn-ghost" id="skipTestBtn">건너뛰고 기본 난이도로 시작</button>
+    </div>`;
+  document.getElementById("ageInput").oninput = e=>{ state.playerAge = e.target.value; };
+  document.getElementById("gradeInput").onchange = e=>{ state.playerGrade = e.target.value; };
+  document.getElementById("toTestBtn").onclick = ()=>{
+    state.testQs = buildLevelTest(); state.testIdx=0; state.testCorrect=0; state.testDone=false;
+    state.screen="levelTest"; save(); renderAll();
+  };
+  document.getElementById("skipTestBtn").onclick = ()=>{
+    const r = decideStartFromTest(4, state.playerGrade); // 정보 없을 때는 중간 난이도로 가정
+    state.startStage=r.stage; state.startLevel=r.level;
+    state.screen="start"; save(); renderAll();
+  };
+  renderTop();
+}
+
+/* ========================= 화면: 레벨 테스트 ========================= */
+function renderLevelTest(){
+  document.getElementById("actionbar").className="hidden";
+  const main = document.getElementById("main");
+  const q = state.testQs[state.testIdx];
+  main.innerHTML = `
+    <div id="qmeta">📊 실력 테스트 · ${state.testIdx+1} / 10</div>
+    <div id="xpbar-wrap" style="margin-bottom:14px"><div id="xpbar" style="width:${(state.testIdx)/10*100}%"></div></div>
+    <div id="qtext">${q.q}</div>
+    <div id="opts"></div>
+    <div id="feedback"></div>`;
+  const optsWrap = document.getElementById("opts");
+  q.opts.forEach((opt,i)=>{
+    const b=document.createElement("button");
+    b.className="btn"; b.textContent=opt;
+    b.onclick=()=>pickTestAnswer(i);
+    optsWrap.appendChild(b);
+  });
+  document.getElementById("stageLabel") && (document.getElementById("stageLabel").textContent = "실력을 확인하는 중이야...");
+  renderTop();
+}
+function pickTestAnswer(i){
+  const q = state.testQs[state.testIdx];
+  if(i===q.a) state.testCorrect++;
+  state.testIdx++;
+  if(state.testIdx>=state.testQs.length){
+    const r = decideStartFromTest(state.testCorrect, state.playerGrade);
+    state.startStage=r.stage; state.startLevel=r.level;
+    state.screen="levelResult";
+  }
+  save(); renderAll();
+}
+function renderLevelResult(){
+  document.getElementById("actionbar").className="hidden";
+  const main = document.getElementById("main");
+  main.innerHTML = `
+    <div class="center-card">
+      <div class="big-emoji">🔎</div>
+      <h2 class="section-title" style="margin-top:14px">실력 분석 완료!</h2>
+      <p>10문제 중 <b>${state.testCorrect}문제</b> 맞혔어.</p>
+      <div class="note-card" style="text-align:left">
+        <h4>추천 시작 지점</h4>
+        <p>📍 ${STAGES[state.startStage-1]?.name || "종합 스테이지"}</p>
+        <p>⭐ 시작 레벨: Lv.${state.startLevel}</p>
+        <p style="font-size:13px;color:#7a6d99">틀린 문제들은 오답노트에도 참고용으로 기록돼. 실제 실력에 맞춰 계속 난이도가 조절될 거야!</p>
+      </div>
+      <button class="btn btn-primary" id="toCharBtn">➡️ 캐릭터 만들러 가기</button>
+    </div>`;
+  document.getElementById("toCharBtn").onclick = ()=>{ state.screen="start"; save(); renderAll(); };
+  renderTop();
+}
+
+/* ========================= 화면: 튜토리얼 ========================= */
+function renderTutorial(){
+  document.getElementById("actionbar").className="hidden";
+  const main = document.getElementById("main");
+  main.innerHTML = `
+    <h2 class="section-title">🎮 게임 시스템 안내</h2>
+    <div class="note-card"><h4>⭐ XP & 레벨</h4><p>문제를 맞히면 +20 XP! XP가 다 차면 자동으로 레벨업하고, 10레벨마다 캐릭터가 진화해.</p></div>
+    <div class="note-card"><h4>❤️ 하트</h4><p>오답을 내도 하트는 줄지 않아. 하트는 💡 힌트를 쓸 때만 1개씩 줄어들어.</p></div>
+    <div class="note-card"><h4>👹 보스전</h4><p>주요 스테이지 끝에서 보스가 등장해. 3분의 2 이상 맞히면 클리어! 져도 레벨은 그대로 유지돼.</p></div>
+    <div class="note-card"><h4>📓 오답노트 & 🏆 업적</h4><p>틀린 문제는 개념별로 정리돼서 언제든 복습할 수 있고, 목표를 달성하면 업적을 얻어.</p></div>
+    <button class="btn btn-primary" id="startQuestBtn">🚀 첫 번째 퀘스트 시작!</button>`;
+  document.getElementById("startQuestBtn").onclick = ()=>{
+    state.stage = state.startStage; state.level = state.startLevel; state.xp = 0;
+    state.onboardingDone = true;
+    state.screen="game";
+    loadStageQuestions();
+    save(); renderAll();
+  };
+  renderTop();
+}
+
+/* ========================= 화면: 시작 ========================= */
+const EMOJI_CHOICES = ["🐲","🦊","🐱","🐶","🦉","🐢","🦄","🐧","🦋","🐬"];
+function renderStart(){
+  document.getElementById("actionbar").className="hidden";
+  const main = document.getElementById("main");
+  main.innerHTML = `
+    <div class="center-card">
+      <div class="big-emoji">${state.charEmoji || "❓"}</div>
+      <h2 class="section-title" style="margin-top:14px">나만의 캐릭터를 골라줘!</h2>
+      <div class="emoji-grid" id="emojiGrid"></div>
+      <input type="text" id="charNameInput" placeholder="캐릭터 이름 (선택)" value="${state.charName||""}">
+      <button class="btn btn-primary" style="margin-top:16px" id="startBtn">🦋 모험 시작하기</button>
+    </div>`;
+  const grid = document.getElementById("emojiGrid");
+  EMOJI_CHOICES.forEach(e=>{
+    const b=document.createElement("div");
+    b.className="emoji-choice"+(state.charEmoji===e?" selected":"");
+    b.textContent=e;
+    b.onclick=()=>{ state.charEmoji=e; renderStart(); };
+    grid.appendChild(b);
+  });
+  document.getElementById("charNameInput").oninput = e=>{ state.charName = e.target.value; };
+  document.getElementById("startBtn").onclick = ()=>{
+    if(!state.charEmoji) state.charEmoji="🦋";
+    state.screen="tutorial";
+    save(); renderAll();
+  };
+  renderTop();
+}
+
+/* ========================= 화면: 문제 ========================= */
+function renderQuestion(){
+  const q = state.inBoss ? state.curBossQ : state.curStageQs[state.curQIdx];
+  const main = document.getElementById("main");
+  main.innerHTML = `
+    <div id="qmeta">${state.inBoss ? `👹 ${state.bossName}와의 대결!` : (state.mode==='review' ? '📓 오답 복습' : (STAGES[state.stage-1]?.name || "추가 모험"))} ${q.tag && !state.inBoss ? `· ${DIFF_ICON[q.tag]}` : ""}</div>
+    ${state.inBoss ? `<div class="boss-emoji">${state.bossName.split(" ")[0]}</div>
+      <div class="boss-hp-wrap"><div class="boss-hp" style="width:${state.bossHP}%"></div></div>
+      <div style="text-align:center;font-size:13px;color:#7a6d99;margin-bottom:10px">HP ${state.bossHP}/100</div>` : ""}
+    <div id="qtext">${q.q}</div>
+    <div id="opts"></div>
+    <div id="feedback"></div>
+  `;
+  const optsWrap = document.getElementById("opts");
+  q.opts.forEach((opt,i)=>{
+    const b=document.createElement("button");
+    b.className="btn"; b.textContent=opt;
+    b.onclick=()=>pickAnswer(i);
+    optsWrap.appendChild(b);
+  });
+  renderActionBar();
+  renderTop();
+}
+
+function pickAnswer(i){
+  if(state.answered) return;
+  const q = state.inBoss ? state.curBossQ : state.curStageQs[state.curQIdx];
+  state.answered = true; state.lastPick = i;
+  const correct = i === q.a;
+  const btns = document.querySelectorAll("#opts .btn");
+  btns.forEach((b,idx)=>{
+    b.classList.add("disabled");
+    if(idx===q.a) b.classList.add("correct");
+    else if(idx===i) b.classList.add("wrong");
+  });
+  const fb = document.getElementById("feedback");
+  state.totalAnswered++;
+  checkLimitReset(state); state.limitUsed++;
+  if(state.mode==='stage' && !state.inBoss){
+    state.recentResults.push(correct);
+    if(state.recentResults.length>5) state.recentResults.shift();
+  }
+
+  if(correct){
+    state.totalCorrect++; state.streak++; state.bestStreak=Math.max(state.bestStreak,state.streak);
+    const {leveledUp, newEvo} = addXP(20);
+    fb.className="ok";
+    fb.innerHTML = `🎉 정답! +20 XP` + (leveledUp?`<br>✨ 레벨업! Lv.${state.level}`:"") + (newEvo?`<br>🌟 캐릭터가 진화했어요!`:"");
+    if(state.inBoss){ state.bossCorrect++; state.bossHP = Math.max(0, state.bossHP-20); }
+  } else {
+    state.totalWrong++; state.streak=0;
+    fb.className="bad";
+    fb.innerHTML = `🙂 아쉽지만 괜찮아!<br>정답: <b>${q.opts[q.a]}</b><br>${q.exp}`;
+    const topic = state.inBoss ? state.bossName : topicOf(state.stage-1);
+    recordWrong(topic, q.q, q.opts[q.a], q.exp);
+  }
+  const newAch = checkAchievements();
+  if(newAch.length){
+    fb.innerHTML += `<br>🏆 새 업적: ${newAch.map(a=>a.name).join(", ")}`;
+  }
+  save();
+  renderTop();
+  renderActionBar();
+}
+
+function nextQuestion(){
+  if(state.inBoss){ return nextBossQuestion(); }
+  state.curQIdx++;
+  if(state.curQIdx >= state.stageTarget){
+    if(state.mode==='review'){
+      state.mode='stage'; state.reviewCleared=true;
+      checkAchievements();
+      state.screen='reviewDone';
+      save(); renderAll(); return;
+    }
+    // 스테이지 완료
+    const bossInfo = BOSSES[state.stage];
+    if(bossInfo){ startBoss(bossInfo); return; }
+    state.stage++;
+    loadStageQuestions();
+  } else {
+    if(state.curStageQs.length <= state.curQIdx) appendNextStageQuestion();
+    state.answered=false; state.lastPick=-1;
+  }
+  save(); renderAll();
+}
+
+/* ---- 보스전 ---- */
+function startBoss(info){
+  state.inBoss = true; state.bossHP=100; state.bossIdx=0; state.bossCorrect=0;
+  state.bossTotal = info.n; state.bossName = info.name; state.bossFailed=false;
+  const pool = STAGES.flatMap(s=>s.qs);
+  state.bossQs = Array.from({length:info.n}, (_,i)=> pool[Math.floor(Math.random()*pool.length)] || genFallbackQuestion('normal'));
+  state.curBossQ = state.bossQs[0];
+  state.answered=false; state.lastPick=-1;
+  save(); renderAll();
+}
+function nextBossQuestion(){
+  state.bossIdx++;
+  if(state.bossIdx >= state.bossTotal){
+    const need = Math.ceil(state.bossTotal*2/3);
+    if(state.bossCorrect >= need){
+      state.inBoss=false; state.bossClears.push(state.bossName);
+      state.stage++;
+      checkAchievements();
+      loadStageQuestions();
+      state.screen="bossResult"; state.bossResultWin=true;
+    } else {
+      state.bossFailed=true;
+      state.screen="bossResult"; state.bossResultWin=false;
+    }
+  } else {
+    state.curBossQ = state.bossQs[state.bossIdx];
+    state.answered=false; state.lastPick=-1;
+  }
+  save(); renderAll();
+}
+function renderBossResult(){
+  document.getElementById("actionbar").className="hidden";
+  const main = document.getElementById("main");
+  if(state.bossResultWin){
+    main.innerHTML = `
+      <div class="center-card">
+        <div class="big-emoji">🎉</div>
+        <h2 class="section-title">${state.bossName} 격파!</h2>
+        <p>${state.bossCorrect} / ${state.bossTotal}문제를 맞혔어요. 정말 대단해!</p>
+        <button class="btn btn-primary" id="contBtn">▶️ 모험 계속하기</button>
+      </div>`;
+    document.getElementById("contBtn").onclick=()=>{ state.screen="game"; save(); renderAll(); };
+  } else {
+    main.innerHTML = `
+      <div class="center-card">
+        <div class="big-emoji">😵</div>
+        <h2 class="section-title">👹 보스전 실패!</h2>
+        <p>괜찮아! 레벨과 XP는 그대로 있어. 이번 보스전만 다시 도전할 수 있어.</p>
+        <button class="btn btn-primary" id="retryBtn">🔄 보스전 다시 시작</button>
+      </div>`;
+    document.getElementById("retryBtn").onclick=()=>{
+      state.screen="game";
+      startBoss({name:state.bossName, n:state.bossTotal});
+    };
+  }
+  renderTop();
+}
+
+/* ========================= 하단 액션바 ========================= */
+function renderActionBar(){
+  const bar = document.getElementById("actionbar");
+  bar.className="";
+  const hintDisabled = state.heart<=0 || state.answered;
+  bar.innerHTML = `
+    <button class="icon-btn" id="menuBtn">📜 메뉴</button>
+    <button class="icon-btn" id="hintBtn" ${hintDisabled?"disabled":""}>💡 힌트</button>
+    <button class="icon-btn next" id="nextBtn" ${state.answered?"":"disabled"}>➡️ 다음 문제</button>
+  `;
+  document.getElementById("menuBtn").onclick = openMenu;
+  document.getElementById("hintBtn").onclick = useHint;
+  document.getElementById("nextBtn").onclick = nextQuestion;
+}
+function useHint(){
+  if(state.heart<=0 || state.answered) return;
+  state.heart--;
+  const q = state.inBoss ? state.curBossQ : state.curStageQs[state.curQIdx];
+  const fb = document.getElementById("feedback");
+  fb.className="ok";
+  fb.innerHTML = `💡 힌트: ${q.exp.replace(/[가-힣\s]*(써요|이에요|에요)\.?$/, "").length>0 ? "동사와 주어의 관계를 다시 살펴봐! " : ""}${hintHide(q.exp)}`;
+  save(); renderTop(); renderActionBar();
+}
+function hintHide(explanation){
+  // 정답 단어를 직접 노출하지 않는 간접 힌트
+  return "주어가 몇 명(단수/복수)인지, 그리고 문장이 긍정문·부정문·의문문 중 무엇인지 먼저 생각해봐.";
+}
+
+/* ========================= 메뉴 ========================= */
+function openMenu(){
+  state.prevScreen = state.screen; state.screen="menu"; renderAll();
+}
+function renderMenu(){
+  document.getElementById("actionbar").className="hidden";
+  const main = document.getElementById("main");
+  main.innerHTML = `
+    <h2 class="section-title">📜 메뉴</h2>
+    <button class="btn" id="mContinue">▶️ 문제 계속</button>
+    <button class="btn" id="mNote">📓 오답 노트</button>
+    <button class="btn" id="mChar">${state.charEmoji||"🦋"} 캐릭터</button>
+    <button class="btn" id="mAch">🏆 업적</button>
+    <button class="btn" id="mBoss">👹 보스</button>
+    <button class="btn" id="mStatus">📊 상태</button>
+  `;
+  document.getElementById("mContinue").onclick=()=>{ state.screen = state.prevScreen==="menu"?"game":state.prevScreen; renderAll(); };
+  document.getElementById("mNote").onclick=()=>{ state.screen="note"; renderAll(); };
+  document.getElementById("mChar").onclick=()=>{ state.screen="char"; renderAll(); };
+  document.getElementById("mAch").onclick=()=>{ state.screen="ach"; renderAll(); };
+  document.getElementById("mBoss").onclick=()=>{ state.screen="bossinfo"; renderAll(); };
+  document.getElementById("mStatus").onclick=()=>{ state.screen="status"; renderAll(); };
+  renderTop();
+}
+function backBtn(target){
+  return `<button class="btn btn-ghost" id="backBtn" style="margin-top:6px">↩️ 메뉴로</button>`;
+}
+function wireBack(){
+  const b = document.getElementById("backBtn");
+  if(b) b.onclick=()=>{ state.screen="menu"; renderAll(); };
+}
+
+/* ---- 오답노트 ---- */
+function renderNote(){
+  document.getElementById("actionbar").className="hidden";
+  const main = document.getElementById("main");
+  const topics = Object.keys(state.wrongBook);
+  let html = `<h2 class="section-title">📓 오답 개념 설명</h2>`;
+  if(topics.length===0){
+    html += `<p>아직 틀린 문제가 없어요. 계속 도전해봐!</p>`;
+  } else {
+    topics.forEach(t=>{
+      const info = state.wrongBook[t];
+      html += `<div class="note-card">
+        <h4>📌 ${t} (${info.count}회)</h4>
+        ${info.examples.map(e=>`<p>📖 ${e.exp}<br>✏️ 예: <b>${e.a}</b></p>`).join("")}
+        <p>⚠️ 자주 하는 실수: 주어의 수(단수/복수)와 동사 형태를 헷갈리기 쉬워요.</p>
+      </div>`;
+    });
+  }
+  html += backBtn();
+  main.innerHTML = html;
+  wireBack();
+  if(topics.length>0){
+    const bar = document.getElementById("actionbar");
+    bar.className="";
+    bar.innerHTML = `<button class="icon-btn next" id="reviewBtn" style="flex:1">▶️ 문제 풀기</button>`;
+    document.getElementById("reviewBtn").onclick=startReview;
+  }
+  renderTop();
+}
+function startReview(){
+  const topics = Object.keys(state.wrongBook);
+  const qs=[];
+  topics.forEach(t=>{
+    state.wrongBook[t].examples.forEach(e=>{
+      STAGES.forEach(s=>s.qs.forEach(q=>{ if(q.q===e.q) qs.push(q); }));
+    });
+  });
+  if(qs.length===0){ qs.push(genFallbackQuestion('normal')); }
+  state.curStageQs = qs.length?qs:[genFallbackQuestion('normal')];
+  state.stageTarget = state.curStageQs.length;
+  state.curQIdx=0; state.answered=false; state.lastPick=-1; state.inBoss=false;
+  state.mode = 'review';
+  state.screen="game"; save(); renderAll();
+}
+function renderReviewDone(){
+  document.getElementById("actionbar").className="hidden";
+  const main = document.getElementById("main");
+  main.innerHTML = `
+    <div class="center-card">
+      <div class="big-emoji">📓✅</div>
+      <h2 class="section-title">복습 완료!</h2>
+      <p>틀렸던 개념들을 다시 풀어봤어. 계속 이렇게 복습하면 실력이 쑥쑥 늘 거야.</p>
+      <button class="btn btn-primary" id="backToGameBtn">▶️ 모험으로 돌아가기</button>
+    </div>`;
+  document.getElementById("backToGameBtn").onclick=()=>{
+    state.screen="game";
+    if(!state.curStageQs || state.mode!=='stage' || state.curQIdx>=state.stageTarget) loadStageQuestions();
+    save(); renderAll();
+  };
+  renderTop();
+}
+
+/* ---- 캐릭터 ---- */
+function renderChar(){
+  document.getElementById("actionbar").className="hidden";
+  const main = document.getElementById("main");
+  main.innerHTML = `
+    <h2 class="section-title">캐릭터</h2>
+    <div class="center-card">
+      <div class="big-emoji">${state.charEmoji}</div>
+      <p style="font-size:18px;font-weight:700">${state.charName || "이름 없는 모험가"}${evoLabel()}</p>
+      <p>Lv.${state.level} · 진화 단계 ${state.evolutionStage}</p>
+      <p style="font-size:13px;color:#7a6d99">다음 진화까지 Lv.${(Math.floor(state.level/10)+1)*10}</p>
+    </div>
+    ${backBtn()}`;
+  wireBack(); renderTop();
+}
+
+/* ---- 업적 ---- */
+function renderAch(){
+  document.getElementById("actionbar").className="hidden";
+  const main = document.getElementById("main");
+  const got = ACHIEVEMENTS.filter(a=>state.achievements.includes(a.id));
+  const next = ACHIEVEMENTS.find(a=>!state.achievements.includes(a.id));
+  let html = `<h2 class="section-title">🏆 업적 (${got.length} / ${ACHIEVEMENTS.length})</h2><div class="badge-row">`;
+  ACHIEVEMENTS.forEach(a=>{
+    const has = state.achievements.includes(a.id);
+    html += `<div class="badge ${has?"":"locked"}"><div class="ic">${a.ic}</div>${a.name}</div>`;
+  });
+  html += `</div>`;
+  if(next){ html += `<div class="note-card"><h4>다음 목표</h4><p>${next.ic} ${next.name}</p></div>`; }
+  html += backBtn();
+  main.innerHTML = html; wireBack(); renderTop();
+}
+
+/* ---- 보스 정보 ---- */
+function renderBossInfo(){
+  document.getElementById("actionbar").className="hidden";
+  const main = document.getElementById("main");
+  let html = `<h2 class="section-title">👹 보스</h2>`;
+  Object.entries(BOSSES).forEach(([stageNum, b])=>{
+    const cleared = state.bossClears.includes(b.name);
+    html += `<div class="note-card"><h4>${b.name}</h4><p>등장 위치: Stage ${stageNum}</p>
+      <p>문제 수: ${b.n} · 클리어 조건: ${Math.ceil(b.n*2/3)}문제 이상 정답</p>
+      <p>${cleared?"✅ 클리어 완료!":"⏳ 아직 도전하지 않았어요."}</p></div>`;
+  });
+  html += backBtn();
+  main.innerHTML = html; wireBack(); renderTop();
+}
+
+/* ---- 상태 ---- */
+function renderStatus(){
+  document.getElementById("actionbar").className="hidden";
+  const main = document.getElementById("main");
+  const rows = [
+    ["캐릭터", `${state.charEmoji} ${state.charName||""}`],
+    ["학년", `${state.playerGrade||"미입력"}${state.playerAge?" · "+state.playerAge+"세":""}`],
+    ["레벨", `Lv.${state.level}`],
+    ["XP", `${state.xp} / ${xpNeeded()}`],
+    ["하트", heartsHTML()],
+    ["게임 한도", `${pct()}%`],
+    ["현재 Stage", `${state.stage}`],
+    ["누적 문제 수", `${state.totalAnswered}`],
+    ["누적 정답", `${state.totalCorrect}`],
+    ["누적 오답", `${state.totalWrong}`],
+    ["보스 클리어 수", `${state.bossClears.length}`],
+    ["업적 수", `${state.achievements.length} / ${ACHIEVEMENTS.length}`],
+  ];
+  let html = `<h2 class="section-title">📊 상태</h2>`;
+  rows.forEach(([k,v])=>{ html += `<div class="stat-line"><span>${k}</span><span>${v}</span></div>`; });
+  html += backBtn();
+  main.innerHTML = html; wireBack(); renderTop();
+}
+
+/* ========================= 라우터 ========================= */
+function limitBanner(){
+  const p = pct();
+  const milestones = [50,75,80,90,95,96,97,98,99];
+  if(milestones.includes(p) && state._lastBanner !== p){
+    state._lastBanner = p;
+  }
+}
+function renderAll(){
+  save();
+  switch(state.screen){
+    case "playerInfo": renderPlayerInfo(); break;
+    case "levelTest": renderLevelTest(); break;
+    case "levelResult": renderLevelResult(); break;
+    case "tutorial": renderTutorial(); break;
+    case "start": renderStart(); break;
+    case "menu": renderMenu(); break;
+    case "note": renderNote(); break;
+    case "char": renderChar(); break;
+    case "ach": renderAch(); break;
+    case "bossinfo": renderBossInfo(); break;
+    case "status": renderStatus(); break;
+    case "bossResult": renderBossResult(); break;
+    case "reviewDone": renderReviewDone(); break;
+    case "game":
+    default:
+      if(!state.curStageQs || state.curStageQs.length===0) loadStageQuestions();
+      renderQuestion();
+  }
+}
+
+/* 초기 진입 */
+if(state.onboardingDone && (state.screen==="playerInfo" || state.screen==="start")){
+  state.screen = "game";
+}
+if(!state.onboardingDone && !["playerInfo","levelTest","levelResult","start","tutorial"].includes(state.screen)){
+  state.screen = "playerInfo";
+}
+if(state.screen==="game" && (!state.curStageQs||state.curStageQs.length===0)) loadStageQuestions();
+renderAll();
+</script>
+</body>
+</html>
